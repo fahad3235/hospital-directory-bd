@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hospital Directory BD</title>
+<meta name="description" content="Find government and private hospitals across Bangladesh - search, filter by division, and call. Works offline.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <div>
+      <h1 data-i18n="app_title">Hospital Directory BD</h1>
+      <p class="subtitle" data-i18n="app_subtitle">Find government &amp; private hospitals across Bangladesh - search, filter, call.</p>
+    </div>
+    <button id="langToggle" class="btn lang-btn" type="button">Bangla</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="emergency" aria-label="Emergency numbers">
+    <div class="emg-head">
+      <h2 data-i18n="emergency_title">Emergency numbers</h2>
+      <p data-i18n="emergency_subtitle">Tap to call. In a life-threatening emergency, call 999 first.</p>
+    </div>
+    <div id="emergencyList" class="emg-list"></div>
+  </section>
+
+  <section class="stats" aria-label="Directory statistics">
+    <div class="stat"><strong id="statTotal">0</strong><span data-i18n="stats_total">hospitals listed</span></div>
+    <div class="stat"><strong id="statDivisions">0</strong><span data-i18n="stats_divisions">divisions covered</span></div>
+    <div class="stat"><strong id="statEmergency">0</strong><span data-i18n="stats_emergency">with 24h emergency</span></div>
+  </section>
+
+  <section class="controls" aria-label="Search and filters">
+    <label class="search-label" for="fSearch" data-i18n="search_label">Search hospitals</label>
+    <input id="fSearch" type="search" data-i18n-ph="search_placeholder" placeholder="Search by name, district, or service..." autocomplete="off">
+    <div class="filters">
+      <label><span data-i18n="division">Division</span>
+        <select id="fDivision"><option value="all">All divisions</option></select>
+      </label>
+      <label><span data-i18n="type">Type</span>
+        <select id="fType">
+          <option value="all" data-i18n="all_types">All types</option>
+          <option value="govt" data-i18n="type_govt">Government</option>
+          <option value="private" data-i18n="type_private">Private</option>
+        </select>
+      </label>
+      <label><span data-i18n="category">Category</span>
+        <select id="fCategory">
+          <option value="all" data-i18n="all_categories">All categories</option>
+          <option value="general" data-i18n="cat_general">General</option>
+          <option value="specialized" data-i18n="cat_specialized">Specialized</option>
+        </select>
+      </label>
+      <label><span data-i18n="sort_by">Sort</span>
+        <select id="fSort">
+          <option value="name" data-i18n="sort_name">Name (A-Z)</option>
+          <option value="division" data-i18n="sort_division">Division, then name</option>
+        </select>
+      </label>
+    </div>
+    <div class="toggles">
+      <label class="check"><input type="checkbox" id="fEmergency"> <span data-i18n="emergency_only">24-hour emergency only</span></label>
+      <label class="check"><input type="checkbox" id="fFavOnly"> <span data-i18n="favourites_only">Favourites only</span></label>
+      <button id="clearFilters" class="btn ghost" type="button" data-i18n="clear_filters">Clear filters</button>
+    </div>
+    <div id="divChips" class="chips"></div>
+  </section>
+
+  <section class="toolbar">
+    <div>
+      <p id="resultCount" class="result-count"></p>
+      <p id="customNote" class="custom-note"></p>
+    </div>
+    <div class="toolbar-btns">
+      <button id="addBtn" class="btn primary" type="button" data-i18n="add_hospital">Add a hospital</button>
+      <button id="exportBtn" class="btn" type="button" data-i18n="export">Export my data</button>
+      <button id="importBtn" class="btn" type="button" data-i18n="import">Import</button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden>
+      <button id="resetBtn" class="btn danger-ghost" type="button" data-i18n="reset_data">Reset my data</button>
+    </div>
+  </section>
+
+  <section id="results" class="grid" aria-live="polite"></section>
+
+  <p class="verify-note" data-i18n="verify_note">Starter data checked against public listings, Nov 2026. Details change - always verify by phone before travelling. This directory is not affiliated with any hospital or the government.</p>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p data-i18n="disclaimer">Not a medical service. For emergencies call 999. Data is stored only on your device.</p>
+    <p data-i18n="footer_note">Works offline. Your hospitals &amp; favourites never leave this device.</p>
+  </div>
+</footer>
+
+<dialog id="formDialog">
+  <form method="dialog" id="hospitalForm">
+    <h2 id="formTitle">Add a hospital</h2>
+    <label><span data-i18n="field_name">Hospital name (English)</span>
+      <input id="fName" type="text" required maxlength="120">
+      <span class="field-error" data-err="name"></span>
+    </label>
+    <label><span data-i18n="field_name_bn">Hospital name (Bangla, optional)</span>
+      <input id="fNameBn" type="text" maxlength="120">
+    </label>
+    <div class="form-row">
+      <label><span data-i18n="field_division">Division</span>
+        <select id="fDivisionForm"></select>
+        <span class="field-error" data-err="division"></span>
+      </label>
+      <label><span data-i18n="field_district">District / city</span>
+        <input id="fDistrict" type="text" maxlength="60">
+        <span class="field-error" data-err="district"></span>
+      </label>
+    </div>
+    <label><span data-i18n="field_address">Address</span>
+      <input id="fAddress" type="text" maxlength="160">
+      <span class="field-error" data-err="address"></span>
+    </label>
+    <label><span data-i18n="field_phone">Phone (optional)</span>
+      <input id="fPhone" type="tel" maxlength="20" placeholder="02-55165001">
+      <span class="field-error" data-err="phone"></span>
+    </label>
+    <div class="form-row">
+      <label><span data-i18n="field_type">Type</span>
+        <select id="fTypeForm">
+          <option value="govt" data-i18n="type_govt">Government</option>
+          <option value="private" data-i18n="type_private">Private</option>
+        </select>
+        <span class="field-error" data-err="type"></span>
+      </label>
+      <label><span data-i18n="field_category">Category</span>
+        <select id="fCategoryForm">
+          <option value="general" data-i18n="cat_general">General</option>
+          <option value="specialized" data-i18n="cat_specialized">Specialized</option>
+        </select>
+        <span class="field-error" data-err="category"></span>
+      </label>
+    </div>
+    <label><span data-i18n="field_services">Services (comma-separated, e.g. emergency, surgery)</span>
+      <input id="fServices" type="text" maxlength="200" placeholder="emergency, surgery">
+      <span class="field-error" data-err="services"></span>
+    </label>
+    <label class="check"><input type="checkbox" id="fEmergencyForm"> <span data-i18n="field_emergency">Has 24-hour emergency</span></label>
+    <div class="dialog-actions">
+      <button type="button" id="cancelForm" class="btn" data-i18n="cancel">Cancel</button>
+      <button type="button" id="saveForm" class="btn primary" data-i18n="save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="js/data.js"></script>
+<script src="js/core.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
